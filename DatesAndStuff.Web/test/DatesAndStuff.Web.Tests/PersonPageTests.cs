@@ -125,6 +125,38 @@ public class PersonPageTests
         var salaryAfterSubmission = double.Parse(salaryLabel.Text);
         salaryAfterSubmission.Should().BeApproximately(increasedSalary, 0.001);
     }
+    
+    [TestCase(-10)]
+    [TestCase(-15)]
+    [TestCase(-100)]
+    public void Person_SalaryDecrease_ShouldFailWithLessThanMinus10(int increasePrecent)
+    {
+        // Arrange
+        driver.Navigate().GoToUrl(BaseURL);
+        driver.FindElement(By.XPath("//*[@data-test='PersonPageNavigation']")).Click();
+
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
+
+        var input = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']")));
+        input.Clear();
+        input.SendKeys(increasePrecent.ToString());
+
+        // Act
+        var submitButton = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']")));
+        submitButton.Click();
+        
+        // Assert
+        wait.Until(d =>
+            d.FindElements(By.CssSelector(".validation-message")).Count > 0
+        );
+        var pageErrors = driver.FindElements(By.CssSelector("ul.validation-errors li"));
+        pageErrors.Should().NotBeEmpty();
+        var fieldErrors = driver.FindElements(By.CssSelector("div.validation-message"));
+        fieldErrors.Should().NotBeEmpty();
+        pageErrors.Any(e => e.Text.Contains("between -10")).Should().BeTrue();
+        fieldErrors.Any(e => e.Text.Contains("between -10")).Should().BeTrue();
+    }
+    
     private bool IsElementPresent(By by)
     {
         try
